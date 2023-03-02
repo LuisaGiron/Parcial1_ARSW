@@ -11,13 +11,17 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.lang.model.util.ElementScanner6;
+
 /**
  *
  * @author hcadavid
  */
-public class HostBlackListsValidator {
+public class HostBlackListsValidator extends Thread{
 
     private static final int BLACK_LIST_ALARM_COUNT=5;
+    private Semaforo miBandera;
+    
     
     /**
      * Check the given host's IP address in all the available black lists,
@@ -29,11 +33,20 @@ public class HostBlackListsValidator {
      * @param ipaddress suspicious host's IP address.
      * @return  Blacklists numbers where the given host's IP address was found.
      */
-    public List<Integer> checkHost(String ipaddress){
-        
+    public List<Integer> checkHost(String ipaddress, int N){
+        int datosProcesar;
+        miBandera = new Semaforo();
+        int ocurrencesCount=0;
         LinkedList<Integer> blackListOcurrences=new LinkedList<>();
         
-        int ocurrencesCount=0;
+        if(N%2==0){
+            datosProcesar= blackListOcurrences.size()/N;
+        }else{
+
+
+        }  
+        
+
         
         HostBlacklistsDataSourceFacade skds=HostBlacklistsDataSourceFacade.getInstance();
         
@@ -51,7 +64,9 @@ public class HostBlackListsValidator {
         }
         
         if (ocurrencesCount>=BLACK_LIST_ALARM_COUNT){
+            PausarHilo();
             skds.reportAsNotTrustworthy(ipaddress);
+
         }
         else{
             skds.reportAsTrustworthy(ipaddress);
@@ -61,10 +76,22 @@ public class HostBlackListsValidator {
         
         return blackListOcurrences;
     }
+
+    public
     
     
     private static final Logger LOG = Logger.getLogger(HostBlackListsValidator.class.getName());
+
+    public void despausarHilos(){
+        miBandera.setBandera(true);
+        synchronized(miBandera).notifyAll();
+    }
+
+    public void PausarHilo(){
+        miBandera.setBandera(false);
+        synchronized(miBandera).wait();
+    }
     
-    
+
     
 }
